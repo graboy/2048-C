@@ -28,6 +28,7 @@ void collapse(Tile *t, enum Direction dir)
             /* Join mov and nxt */
             mov->value = 0;
             nxt->value <<= 1;
+            collapse(nxt, dir);
             break;
         } else {
             /* Collision: move others forward */
@@ -66,7 +67,7 @@ int main(int argc, char *argv[])
     int i;
     for (i = 0; i < c; i++) {
         int value;
-        sscanf(argv[i], "%i", &value);
+        sscanf(argv[i+1], "%i", &value);
         tiles[i] = make_tile(value);
     }
 
@@ -88,7 +89,7 @@ int main(int argc, char *argv[])
     collapse(tiles[0], EAST);
 
     for (i = 0; i < c; i++)
-        printf("%i", tiles[i]->value);
+        printf("%i ", tiles[i]->value);
     putchar('\n');
 
     for (i = 0; i < c; i++)
