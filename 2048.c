@@ -24,15 +24,13 @@ void collapse(Tile *t, enum Direction dir)
             /* Slide into empty slot */
             nxt->value = mov->value;
             mov->value = 0;
-        } else if (nxt->value == mov->value) {
-            /* Join mov and nxt */
-            mov->value = 0;
-            nxt->value <<= 1;
-            collapse(nxt, dir);
-            break;
         } else {
-            /* Collision: move others forward */
             collapse(nxt, dir);
+            if (nxt->value == mov->value) {
+                /* Join mov and nxt */
+                mov->value = 0;
+                nxt->value <<= 1;
+            }
             break;
         }
         mov = nxt;
