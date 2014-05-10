@@ -43,16 +43,16 @@ void destroy_board(Board *b)
 
 bool boards_are_equal(Board *b1, Board *b2)
 {
-    bool thesame = true;
     for (int x = 0; x < boardsize; x++) {
         for (int y = 0; y < boardsize; y++) {
-            if (memcmp(b1->tile[x][y], b2->tile[x][y], sizeof(Tile)) != 0) 
-                thesame = false;
+            if (memcmp(b1->tile[x][y], b2->tile[x][y], sizeof(Tile)) != 0)
+                return false;
         }
     }
 
-    return thesame;
+    return true;
 }
+
 Board *clone_board(Board *b)
 {
     Board *nb = malloc(sizeof(Board));
@@ -62,6 +62,8 @@ Board *clone_board(Board *b)
             memcpy(nb->tile[x][y], b->tile[x][y], sizeof(Tile));
         }
     }
+
+    return nb;
 }
 
 /* Returns new board if good, null if it can't move */
