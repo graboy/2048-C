@@ -1,19 +1,103 @@
 #include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
 #include <stddef.h>
 #include <inttypes.h>
 #include <stdlib.h>
 
 typedef struct Tile_ Tile;
+typedef struct Board_ Board;
 
 struct Tile_ {
     uint16_t value;
     Tile *(neighbor[4]);
 };
 
+/* TODO board building function */
+struct Board_ {
+    Tile ***tile;
+};
+
 enum Direction { NORTH, SOUTH, EAST, WEST };
+
+int boardsize;
 
 void collapse(Tile *t, enum Direction dir);
 Tile *make_tile(uint16_t value);
+Board *make_board_move(Board *board, enum Direction dir);
+int make_move(enum Direction dir);
+
+bool boards_are_equal(Board *b1, Board *b2);
+Board *clone_board(Board *b);
+void destroy_board(Board *b);
+
+void destroy_board(Board *b)
+{
+    for (int x = 0; x < boardsize; x++) {
+        for (int y = 0; y < boardsize; y++) {
+            free(b->tile[x][y]);
+        }
+    }
+    free(b);
+}
+
+bool boards_are_equal(Board *b1, Board *b2)
+{
+    bool thesame = true;
+    for (int x = 0; x < boardsize; x++) {
+        for (int y = 0; y < boardsize; y++) {
+            if (memcmp(b1->tile[x][y], b2->tile[x][y], sizeof(Tile)) != 0) 
+                thesame = false;
+        }
+    }
+
+    return thesame;
+}
+Board *clone_board(Board *b)
+{
+    Board *nb = malloc(sizeof(Board));
+    for (int x = 0; x < boardsize; x++) {
+        for (int y = 0; y < boardsize; y++) {
+            nb->tile[x][y] = malloc(sizeof(Tile));
+            memcpy(nb->tile[x][y], b->tile[x][y], sizeof(Tile));
+        }
+    }
+}
+
+/* Returns new board if good, null if it can't move */
+Board *make_board_move(Board *old, enum Direction dir)
+{
+    Board *new = clone_board(old);
+
+    switch (dir) {
+    case NORTH:
+        for (int i = 0; i < boardsize; i++)
+            collapse(new->tile[i][boardsize-1], NORTH);
+        break;
+
+    case SOUTH:
+        for (int i = 0; i < boardsize; i++)
+            collapse(new->tile[i][0], SOUTH);
+        break;
+
+    case EAST:
+        for (int i = 0; i < boardsize; i++)
+            collapse(new->tile[0][i], EAST);
+        break;
+
+    case WEST:
+        for (int i = 0; i < boardsize; i++)
+            collapse(new->tile[boardsize-1][i], WEST);
+        break;
+    }
+
+    if (boards_are_equal(new, old)) {
+        destroy_board(new);
+        new = NULL;
+    }
+
+    return new;
+}
 
 void collapse(Tile *t, enum Direction dir)
 {
@@ -59,6 +143,45 @@ Tile *make_tile(uint16_t value)
 
 int main(int argc, char *argv[])
 {
+    Board *board;
+
+    if (argc == 1) {
+        boardsize = 4;
+    } else if (argc == 2) {
+        sscanf(argv[1], "%i", &boardsize);
+    } else {
+        printf("Format: %s <board size>", argv[0]);
+    }
+
+    for (int i = 0; i < boardsize * boardsize; i++)
+        board->tile[0][i] = make_tile(0);
+
+    char in;
+    enum Direction dir;
+    while (scanf("%c", &in) != EOF) {
+        if (in == 'w')
+            dir = NORTH;
+        else if (in == 's')
+            dir = SOUTH;
+        else if (in == 'd')
+            dir = EAST;
+        else if (in == 'a')
+            dir = WEST;
+        else
+            /* TODO */ ;
+
+        Board *newboard;
+
+        /* If move is not valid */
+        if ((newboard = make_board_move(board, dir)) == NULL) {
+            continue;
+        }
+
+
+    }
+
+
+    /*
     int c = argc - 1;
 
     Tile *(tiles[c]);
@@ -69,7 +192,7 @@ int main(int argc, char *argv[])
         tiles[i] = make_tile(value);
     }
 
-    /* setup Tile->neighbor[] */
+    // setup Tile->neighbor[]
     for (i = 0; i < c; i++) {
         tiles[i]->neighbor[NORTH] = NULL;
         tiles[i]->neighbor[SOUTH] = NULL;
@@ -81,8 +204,8 @@ int main(int argc, char *argv[])
     }
     tiles[0]->neighbor[EAST] = tiles[1];
     tiles[0]->neighbor[WEST] = NULL;
-    tiles[c - 1]->neighbor[WEST] = tiles[c - 2];
-    tiles[c - 1]->neighbor[EAST] = NULL;
+    tiles[c-1]->neighbor[WEST] = tiles[c-2];
+    tiles[c-1]->neighbor[EAST] = NULL;
 
     collapse(tiles[0], EAST);
 
@@ -92,6 +215,7 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < c; i++)
         free(tiles[i]);
+    */
 
     return 0;
 }
