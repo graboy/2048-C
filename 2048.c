@@ -13,7 +13,6 @@ struct Tile_ {
     Tile *(neighbor[4]);
 };
 
-/* TODO board building function */
 struct Board_ {
     Tile ***tile;
 };
@@ -30,6 +29,34 @@ int make_move(enum Direction dir);
 bool boards_are_equal(Board *b1, Board *b2);
 Board *clone_board(Board *b);
 void destroy_board(Board *b);
+void setup_neighbors(Board *b);
+
+void setup_neighbors(Board *b)
+{
+    for (int x = 0; x < boardsize; x++) {
+        for (int y = 0; y < boardsize; y++) {
+            if (y != 0)
+                b->tile[x][y]->neighbor[NORTH] = b->tile[x][y+1];
+            else
+                b->tile[x][y]->neighbor[NORTH] = NULL;
+
+            if (y != boardsize - 1)
+                b->tile[x][y]->neighbor[SOUTH] = b->tile[x][y-1];
+            else
+                b->tile[x][y]->neighbor[SOUTH] = NULL;
+
+            if (x != 0)
+                b->tile[x][y]->neighbor[WEST] = b->tile[x-1][y];
+            else
+                b->tile[x][y]->neighbor[WEST] = NULL;
+
+            if (x != boardsize - 1)
+                b->tile[x][y]->neighbor[WEST] = b->tile[x+1][y];
+            else
+                b->tile[x][y]->neighbor[WEST] = NULL;
+        }
+    }
+}
 
 void destroy_board(Board *b)
 {
@@ -56,17 +83,29 @@ bool boards_are_equal(Board *b1, Board *b2)
 Board *clone_board(Board *b)
 {
     Board *nb = malloc(sizeof(Board));
+    if (nb == NULL) {
+        printf("ERROR: bad malloc in function \"clone_board\". Exiting...");
+        exit(1);
+    }
+
     for (int x = 0; x < boardsize; x++) {
         for (int y = 0; y < boardsize; y++) {
             nb->tile[x][y] = malloc(sizeof(Tile));
+
+            if (nb->tile[x][y] == NULL) {
+                printf("ERROR: bad malloc in function \"clone_board\". Exiting...");
+                exit(1);
+            }
             memcpy(nb->tile[x][y], b->tile[x][y], sizeof(Tile));
         }
     }
 
+    setup_neighbors(nb);
+
     return nb;
 }
 
-/* Returns new board if good, null if it can't move */
+/* Returns new board if good, null if move isn't available */
 Board *make_board_move(Board *old, enum Direction dir)
 {
     Board *new = clone_board(old);
@@ -132,6 +171,7 @@ void collapse(Tile *t, enum Direction dir)
     }
 }
 
+/* returns pointer to a new tile with value passed as parameter */
 Tile *make_tile(uint16_t value)
 {
     Tile *t = malloc(sizeof(Tile));
@@ -158,6 +198,8 @@ int main(int argc, char *argv[])
     for (int i = 0; i < boardsize * boardsize; i++)
         board->tile[0][i] = make_tile(0);
 
+    setup_neighbors(board);
+
     char in;
     enum Direction dir;
     while (scanf("%c", &in) != EOF) {
@@ -177,47 +219,13 @@ int main(int argc, char *argv[])
         /* If move is not valid */
         if ((newboard = make_board_move(board, dir)) == NULL) {
             continue;
+        } else {
+            destroy_board(board);
+            board = newboard;
         }
-
-
     }
 
-
-    /*
-    int c = argc - 1;
-
-    Tile *(tiles[c]);
-    int i;
-    for (i = 0; i < c; i++) {
-        int value;
-        sscanf(argv[i+1], "%i", &value);
-        tiles[i] = make_tile(value);
-    }
-
-    // setup Tile->neighbor[]
-    for (i = 0; i < c; i++) {
-        tiles[i]->neighbor[NORTH] = NULL;
-        tiles[i]->neighbor[SOUTH] = NULL;
-    }
-
-    for (i = 1; i < c - 1; i++) {
-        tiles[i]->neighbor[EAST] = tiles[i+1];
-        tiles[i]->neighbor[WEST] = tiles[i-1];
-    }
-    tiles[0]->neighbor[EAST] = tiles[1];
-    tiles[0]->neighbor[WEST] = NULL;
-    tiles[c-1]->neighbor[WEST] = tiles[c-2];
-    tiles[c-1]->neighbor[EAST] = NULL;
-
-    collapse(tiles[0], EAST);
-
-    for (i = 0; i < c; i++)
-        printf("%i ", tiles[i]->value);
-    putchar('\n');
-
-    for (i = 0; i < c; i++)
-        free(tiles[i]);
-    */
+    destroy_board(board);
 
     return 0;
 }
