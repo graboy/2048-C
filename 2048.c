@@ -131,7 +131,7 @@ bool boards_are_equal(Board *b1, Board *b2)
 {
     for (int x = 0; x < boardsize; x++) {
         for (int y = 0; y < boardsize; y++) {
-            if (memcmp(&b1->tile[x][y], &b2->tile[x][y], sizeof(Tile)) != 0)
+            if (b1->tile[x][y].value != b2->tile[x][y].value)
                 return false;
         }
     }
