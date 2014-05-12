@@ -5,6 +5,8 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
+#define BOARD_FULL 1
+
 typedef struct Tile_ Tile;
 typedef struct Board_ Board;
 
@@ -31,6 +33,28 @@ Board *clone_board(Board *b);
 void destroy_board(Board *b);
 void setup_neighbors(Board *b);
 void print_board(Board *b);
+int place_random_block(Board *b);
+
+int place_random_block(Board *b)
+{
+    int emptycount = 0;
+    Tile *(empty[boardsize * boardsize]);
+
+    for (int x = 0; x < boardsize; x++) {
+        for (int y = 0; y < boardsize; y++) {
+            if (b->tile[x][y].value == 0)
+                empty[emptycount++] = &b->tile[x][y];
+        }
+    }
+
+    if (emptycount == 0)
+        return BOARD_FULL;
+
+    int rand = random() % emptycount;
+    int value = ((random() % 10) == 0) ? 4 : 2;
+
+    empty[rand]->value = value;
+}
 
 Board *make_empty_board(void)
 {
@@ -210,6 +234,8 @@ int main(int argc, char *argv[])
 
     Board *board = make_empty_board();
 
+    place_random_block(board);
+
     print_board(board);
 
     char in;
@@ -236,6 +262,7 @@ int main(int argc, char *argv[])
         } else {
             destroy_board(board);
             board = newboard;
+            place_random_block(board);
         }
 
         print_board(board);
