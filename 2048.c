@@ -14,7 +14,6 @@ struct Tile_ {
 };
 
 struct Board_ {
-    /* TODO turn this into **tile */
     Tile **tile;
 };
 
@@ -52,7 +51,7 @@ Board *make_empty_board(void)
 
 badmalloc: {
     printf("ERROR: bad malloc in function \"make_empty_board\". Exiting...");
-    exit(0);
+    exit(1);
     }
 }
 
@@ -66,8 +65,10 @@ void destroy_board(Board *b)
 
 void print_board(Board *b)
 {
-    for (int x = 0; x < boardsize; x++) {
-        for (int y = 0; y < boardsize; y++) {
+    printf("\n");
+    for (int y = 0; y < boardsize; y++) {
+        printf("\n");
+        for (int x = 0; x < boardsize; x++) {
             printf("%4i ", b->tile[x][y].value);
         }
         printf("\n");
@@ -78,25 +79,25 @@ void setup_neighbors(Board *b)
 {
     for (int x = 0; x < boardsize; x++) {
         for (int y = 0; y < boardsize; y++) {
-            if (y != 0)
+            if (y < boardsize - 1)
                 b->tile[x][y].neighbor[NORTH] = &b->tile[x][y+1];
             else
                 b->tile[x][y].neighbor[NORTH] = NULL;
 
-            if (y != boardsize - 1)
+            if (y > 0)
                 b->tile[x][y].neighbor[SOUTH] = &b->tile[x][y-1];
             else
                 b->tile[x][y].neighbor[SOUTH] = NULL;
 
-            if (x != 0)
+            if (x > 0)
                 b->tile[x][y].neighbor[WEST]  = &b->tile[x-1][y];
             else
                 b->tile[x][y].neighbor[WEST]  = NULL;
 
-            if (x != boardsize - 1)
-                b->tile[x][y].neighbor[WEST]  = &b->tile[x+1][y];
+            if (x < boardsize - 1)
+                b->tile[x][y].neighbor[EAST]  = &b->tile[x+1][y];
             else
-                b->tile[x][y].neighbor[WEST]  = NULL;
+                b->tile[x][y].neighbor[EAST]  = NULL;
         }
     }
 }
@@ -135,23 +136,23 @@ Board *make_board_move(Board *old, enum Direction dir)
 
     switch (dir) {
     case NORTH:
-        for (int i = 0; i < boardsize; i++)
-            collapse(&new->tile[i][boardsize-1], NORTH);
+        for (int x = 0; x < boardsize; x++)
+            collapse(&new->tile[x][boardsize-1], SOUTH);
         break;
 
     case SOUTH:
-        for (int i = 0; i < boardsize; i++)
-            collapse(&new->tile[i][0], SOUTH);
+        for (int x = 0; x < boardsize; x++)
+            collapse(&new->tile[x][0], NORTH);
         break;
 
     case EAST:
-        for (int i = 0; i < boardsize; i++)
-            collapse(&new->tile[0][i], EAST);
+        for (int y = 0; y < boardsize; y++)
+            collapse(&new->tile[0][y], EAST);
         break;
 
     case WEST:
-        for (int i = 0; i < boardsize; i++)
-            collapse(&new->tile[boardsize-1][i], WEST);
+        for (int y = 0; y < boardsize; y++)
+            collapse(&new->tile[boardsize-1][y], WEST);
         break;
     }
 
@@ -167,30 +168,31 @@ void collapse(Tile *t, enum Direction dir)
 {
     Tile *mov = t;
     Tile *nxt = mov->neighbor[dir];
-    while (nxt != NULL) {
-        if (nxt->value == 0) {
+    while (nxt != NULL && nxt->value == 0) {
             /* Slide into empty slot */
             nxt->value = mov->value;
             mov->value = 0;
-        } else {
-            collapse(nxt, dir);
-            if (nxt->value == mov->value) {
-                /* Join mov and nxt */
-                mov->value = 0;
-                nxt->value <<= 1;
-            }
-            break;
-        }
-        mov = nxt;
-        nxt = nxt->neighbor[dir];
+            mov = nxt;
+            nxt = nxt->neighbor[dir];
     }
 
-    while ((nxt != NULL) && (nxt->value == 0)) {
-        /* Slide into empty slot */
-        nxt->value = mov->value;
+    if (nxt != NULL)
+        collapse(nxt, dir);
+    else
+        return;
+
+    while (nxt != NULL && nxt->value == 0) {
+            /* Slide into empty slot */
+            nxt->value = mov->value;
+            mov->value = 0;
+            mov = nxt;
+            nxt = nxt->neighbor[dir];
+    }
+
+    if (mov->value == nxt->value) {
+        /* Join mov and nxt */
         mov->value = 0;
-        mov = nxt;
-        nxt = nxt->neighbor[dir];
+        nxt->value <<= 1;
     }
 }
 
@@ -202,7 +204,8 @@ int main(int argc, char *argv[])
     } else if (argc == 2) {
         sscanf(argv[1], "%i", &boardsize);
     } else {
-        printf("Format: %s <board size>", argv[0]);
+        printf("Format: %s <board size>\n", argv[0]);
+        exit(0);
     }
 
     Board *board = make_empty_board();
@@ -220,8 +223,10 @@ int main(int argc, char *argv[])
             dir = EAST;
         else if (in == 'a')
             dir = WEST;
+        else if (in == 'q')
+            break;
         else
-            /* TODO */ ;
+            continue;
 
         Board *newboard;
 
@@ -231,8 +236,9 @@ int main(int argc, char *argv[])
         } else {
             destroy_board(board);
             board = newboard;
-            print_board(board);
         }
+
+        print_board(board);
     }
 
     destroy_board(board);
